@@ -1,3 +1,9 @@
+//Universidad del Valle de Guatemala
+//Electronica Digital 2
+//Andrea Palencia 
+//Proyecto 
+
+//Librerias 
 #include <Wire.h>
 #include "MAX30105.h"
 
@@ -5,7 +11,7 @@
 
 MAX30105 particleSensor;
 
-//Definicion de pines 
+//Definicion de pines com UART
 #define rx 17
 #define tx 16
 
@@ -25,8 +31,12 @@ int beatAvg;
 //variables UART
 int ultimoestado=0;
 
+//Botones de la tiva
+int medir =0;
+int save = 0;
 
 
+//CONFIGURACIÓN
 
 void setup()
 {
@@ -47,26 +57,26 @@ void setup()
   particleSensor.setPulseAmplitudeGreen(0); //Turn off Green LED
 }
 
+//LOOP PRINCIPAL 
 void loop()
 {
- valorsensor();
+
  
+//para botones de la TIVA
   if (Serial2.available() > 0)
   {
-    int inicio = Serial2.read();
-    if(inicio !=ultimoestado)
-    {      
-      valorsensor();
-    }
-    ultimoestado=inicio;
-  }
- 
-
- 
+    medir = Serial2.read();
+    Serial.print("medir: ");
+    Serial.println(medir); 
+}
+if (medir == 1){
+  Serial.println("COLOCAR DEDO");
+  valorsensor();
+  Serial2.write(beatAvg);
 }
 
-//Sensor 
-//
+//HEART RATE Sensor 
+
 void valorsensor(void){
   long irValue = particleSensor.getIR();
 
