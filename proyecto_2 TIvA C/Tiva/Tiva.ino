@@ -58,7 +58,38 @@ int save = 0;
 
 //Funciones 
 
+//Funciones de la pantalla
+void LCD_Init(void);
+void LCD_CMD(uint8_t cmd);
+void LCD_DATA(uint8_t data);
+void SetWindows(unsigned int x1, unsigned int y1, unsigned int x2, unsigned int y2);
+void LCD_Clear(unsigned int c);
+void H_line(unsigned int x, unsigned int y, unsigned int l, unsigned int c);
+void V_line(unsigned int x, unsigned int y, unsigned int l, unsigned int c);
+void Rect(unsigned int x, unsigned int y, unsigned int w, unsigned int h, unsigned int c);
+void FillRect(unsigned int x, unsigned int y, unsigned int w, unsigned int h, unsigned int c);
+void LCD_Print(String text, int x, int y, int fontSize, int color, int background);
+
+void LCD_Bitmap(unsigned int x, unsigned int y, unsigned int width, unsigned int height, unsigned char bitmap[]);
+void LCD_Sprite(int x, int y, int width, int height, unsigned char bitmap[], int columns, int index, char flip, char offset);
+
+//Funciones de SD
+void MemoriaSD(void);
+void TonoSD(void);
+void TonoDato(void);
+
+//Funcion Buzzer
+void buzzerSave(void);
+
+extern uint8_t fondo[];
+extern uint8_t heart[];
+extern uint8_t pulse[];
+
+void TFTconf(void);
+
+//INICIALIZACION 
 void setup() {
+  //Com serial
   Serial.begin(115200); 
   Serial2.begin(115200);
 
