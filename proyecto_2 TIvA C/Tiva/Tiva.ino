@@ -1,3 +1,37 @@
+//Universidad del Valle de Guatemala
+//Electronica Digital 2
+//Andrea Palencia 
+//TIVA C
+//Proyecto 
+
+//Librerias de SD
+#include <SPI.h>
+#include <SD.h>
+
+//File
+File myFile;
+
+//Librerias para la pantalla TFT
+#include <stdint.h>
+#include <stdbool.h>
+#include <TM4C123GH6PM.h>
+#include "inc/hw_ints.h"
+#include "inc/hw_memmap.h"
+#include "inc/hw_types.h"
+#include "driverlib/debug.h"
+#include "driverlib/gpio.h"
+#include "driverlib/interrupt.h"
+#include "driverlib/rom_map.h"
+#include "driverlib/rom.h"
+#include "driverlib/sysctl.h"
+#include "driverlib/timer.h"
+
+#include "bitmaps.h"
+#include "font.h"
+#include "lcd_registers.h"
+
+
+
 //Definición de pines 
 #define tx PD_7
 #define rx PD_6
@@ -21,23 +55,19 @@
 #define disp2 PF_1
 #define disp1 PA_7
 
-//Librerias 
-#include <SPI.h>
-#include <SD.h>
+
 
 // Variables globales 
 int inicio=0;
-int highscore3[]={48,48,48,48};
-int high3;
+//int highscore3[]={48,48,48,48};
+//int high3;
 
 //Funciones 
 
-File root;
-File myFile;
+
 
 void setup() {
-  Serial.begin(115200); //no funciona con 115200
-  
+  Serial.begin(115200); 
   Serial2.begin(115200);
 
 //SD
@@ -48,7 +78,7 @@ void setup() {
   // Note that even if it's not used as the CS pin, the hardware SS pin
   // (10 on most Arduino boards, 53 on the Mega) must be left as an output
   // or the SD library functions will not work.
-  pinMode(10, OUTPUT);
+  pinMode(, OUTPUT);
 
   if (!SD.begin(32)) {
     Serial.println("initialization failed!");
