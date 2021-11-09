@@ -48,23 +48,15 @@ File myFile;
 #define LCD_RS PD_2
 #define LCD_WR PD_3
 #define LCD_RD PE_1
-#define der2 PE_2
-#define izq2 PE_3
-#define izq1 PE_5
-#define der1 PA_6
-#define disp2 PF_1
-#define disp1 PA_7
-
+int DPINS[] = {PB_0, PB_1, PB_2, PB_3, PB_4, PB_5, PB_6, PB_7};
 
 
 // Variables globales 
-int inicio=0;
-//int highscore3[]={48,48,48,48};
-//int high3;
+int medir = 0;
+int BPM = 0;
+int save = 0;
 
 //Funciones 
-
-
 
 void setup() {
   Serial.begin(115200); 
