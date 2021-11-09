@@ -1,16 +1,8 @@
-/*******************************
-//Universidad del Valle de Guatemala
-//BE3015: Electrónica Digital 2
-//Andrea Palencia
-//Proyecto 2
-
-//*******************************
-
 //Definición de pines 
 #define tx PD_7
 #define rx PD_6
-#define boton1 PD_4
-#define boton2 PD_0
+#define boton1 PF_4
+#define boton2 PF_0
 
 
 
@@ -25,26 +17,13 @@ void setup() {
 
 void loop() {
  
-  int EstadoBI = digitalRead(BtnI);
-  int EstadoBD = digitalRead(BtnD);
+  int EstadoB1 = digitalRead(boton1);
+  int EstadoB2 = digitalRead(boton2);
 
-  if(EstadoBI == LOW)
+  if(EstadoB1 == LOW)
   {
-    DCLedG++;
-    delay(50);
-    if (DCLedG > 254)
-    {
-      DCLedG == 0;
+   int  inicio=1;
+   Serial2.write (inicio);
+   
     }
-  }
-  
-  if(EstadoBD == LOW)
-  {
-    DCLedG--;
-    delay(50);
-    if (DCLedG < 1)
-    {
-      DCLedG == 253;
     }
-  }
-}
