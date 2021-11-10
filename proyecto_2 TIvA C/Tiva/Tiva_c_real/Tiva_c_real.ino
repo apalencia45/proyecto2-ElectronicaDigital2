@@ -81,9 +81,9 @@ void TonoDato(void);
 //Funcion Buzzer
 void buzzerSave(void);
 
-extern uint8_t fondo[];
-extern uint8_t heart[];
-extern uint8_t pulse[];
+//extern uint8_t fondo[];
+//extern uint8_t heart[];
+//extern uint8_t pulse[];
 
 void TFTconf(void);
 
@@ -109,7 +109,7 @@ void setup() {
   // Note that even if it's not used as the CS pin, the hardware SS pin
   // (10 on most Arduino boards, 53 on the Mega) must be left as an output
   // or the SD library functions will not work.
-  pinMode(, OUTPUT);
+  pinMode(PA_3, OUTPUT);
 
   if (!SD.begin(PA_3)) {
     Serial.println("initialization failed!");
@@ -117,9 +117,7 @@ void setup() {
   }
   Serial.println("initialization done.");
 
-  root = SD.open("/");
-
-  printDirectory(root, 0);
+ 
 
 //Pin del Buzzer 
   pinMode (buzzer, OUTPUT);
@@ -147,7 +145,7 @@ void loop() {
   int EstadoB1 = digitalRead(boton1);
   int EstadoB2 = digitalRead(boton2);
   Serial2.write (medir);
-  if((boton2 == LOW){
+  if(boton2 == LOW){
 
     medir++;
     if (medir > 1){
@@ -156,15 +154,15 @@ void loop() {
   }
   
   if (EstadoB2 == LOW){
-    save++
+    save++;
     if (save > 1){
-      guardar = 0;
+      save = 0;
     }
   }
 
   if (medir == 1){
     FillRect(0,0,319,239,0xFCD3);
-    String text5 = "MIEDIENDO";
+    String text5 = "MIDIENDO";
 
     LCD_Print(text5, 70,70,2,0x0000FF,0xFCD3);
     String text6 = "...";
@@ -173,7 +171,7 @@ void loop() {
     String text8 = "PRESIONE EL BOTON PARA MOSTRAR DATOS ";
     LCD_Print(text8, 35,200,1,0x0000FF,0x20BC);
     tone(buzzer, 1000);
-    delay(500)
+    delay(500);
     noTone(buzzer);
   }
 
@@ -190,7 +188,7 @@ void loop() {
       LCD_Print(text7, 65,35,2,0x0000FF,0xBF97);
       String text4 = String("LATIDOS POR MINUTOS");
       LCD_Print (text4, 95,37,1,0x0000FF,0xBF97);
-      LCD_Bitmap(70,65,150,heart);
+      //LCD_Bitmap(70,65,150,heart);
 
       buzzerSave();
 
@@ -302,7 +300,9 @@ void TonoDato(void)
   noTone(Buzzer);
 }
 
-//FUNCIONES PARA LA LCD
+//*********************************************
+// Función para inicializar LCD
+//*********************************************
 void LCD_Init(void) {
   pinMode(LCD_RST, OUTPUT);
   pinMode(LCD_CS, OUTPUT);
