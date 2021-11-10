@@ -1,15 +1,17 @@
+//******************************
 //Universidad del Valle de Guatemala
-//Electronica Digital 2
-//Andrea Palencia 
-//TIVA C
-//Proyecto 
+//BE3015: Electronica Digital 2
+//Andrea Palencia
+//TIVA C - Master
+//Proyecto 2.
+//******************************
 
-//Librerias de SD
+//******************************
+//Librerias
+//******************************
+//Librerias para la tarjeta SD
 #include <SPI.h>
 #include <SD.h>
-
-//File
-File myFile;
 
 //Librerias para la pantalla TFT
 #include <stdint.h>
@@ -30,33 +32,31 @@ File myFile;
 #include "font.h"
 #include "lcd_registers.h"
 
+//******************************
+//Pines
+//******************************
+#define boton1 PF_0 //Boton derecho
+#define boton2 PF_4 //Boton Izquierdo
 
-
-//Definición de pines 
-#define tx PD_7
 #define rx PD_6
-#define boton1 PF_0 //Boton derecho 
-#define boton2 PF_4 //Boton izquierdo
-#define buzzer PA_7
+#define tx PD_7
 
-#define note_cc 261
-#define note_dd 294
-
+#define Buzzer PA_7
 
 #define LCD_RST PD_0
 #define LCD_CS PD_1
 #define LCD_RS PD_2
 #define LCD_WR PD_3
 #define LCD_RD PE_1
-int DPINS[] = {PB_0, PB_1, PB_2, PB_3, PB_4, PB_5, PB_6, PB_7};
 
+//******************************
+//Prototipos funcionales
+//******************************
+void MemoriaSD(void);
+void TonoSD(void);
+void TonoDato(void);
 
-// Variables globales 
-int medir = 0;
-int BPM = 0;
-int save = 0;
-
-//Funciones 
+void BuzzerSave(void);
 
 //Funciones de la pantalla
 void LCD_Init(void);
@@ -73,59 +73,53 @@ void LCD_Print(String text, int x, int y, int fontSize, int color, int backgroun
 void LCD_Bitmap(unsigned int x, unsigned int y, unsigned int width, unsigned int height, unsigned char bitmap[]);
 void LCD_Sprite(int x, int y, int width, int height, unsigned char bitmap[], int columns, int index, char flip, char offset);
 
-//Funciones de SD
-void MemoriaSD(void);
-void TonoSD(void);
-void TonoDato(void);
+//******************************
+//Variables globales
+//******************************
+int medir = 0;
+int BPM = 0;
+int save = 0;
 
-//Funcion buzzer
-void buzzerSave(void);
 
-//extern uint8_t fondo[];
-//extern uint8_t heart[];
-//extern uint8_t pulse[];
+String Sensor = "";
 
-void TFTconf(void);
+//Tarjeta SD
+File archivo;
 
-//INICIALIZACION 
+//Pantalla
+int DPINS[] = {PB_0, PB_1, PB_2, PB_3, PB_4, PB_5, PB_6, PB_7};
+extern uint8_t fondo[];
+extern uint8_t monitor1[];
+
+
+
+//*********************************************
+// Inicialización
+//*********************************************
 void setup() {
-  //Com serial
-  Serial.begin(115200); 
+  Serial.begin(115200);
   Serial2.begin(115200);
 
+  //Boton Solicitar dato
+  pinMode(boton1, INPUT_PULLUP);
 
-//Boton para iniciar el sensor 
- pinMode(boton1, INPUT_PULLUP);
- //Boton para guardar el dato 
- pinMode(boton2, INPUT_PULLUP);
-
- 
-
-
- 
-//SD
-  SPI.setModule(0);
+  // Boton guardar Dato
+  pinMode(boton2, INPUT_PULLUP);
   
-  Serial.print("Initializing SD card...");
-  // On the Ethernet Shield, CS is pin 4. It's set as an output by default.
-  // Note that even if it's not used as the CS pin, the hardware SS pin
-  // (10 on most Arduino boards, 53 on the Mega) must be left as an output
-  // or the SD library functions will not work.
+  // Pin de SD
   pinMode(PA_3, OUTPUT);
 
+  //Pin del Buzzer
+  pinMode(Buzzer, OUTPUT);
+  
+  SPI.setModule(0);
+    // Estamos Inicializando la tarjeta SD
   if (!SD.begin(PA_3)) {
     Serial.println("initialization failed!");
     return;
   }
-  Serial.println("initialization done.");
 
- 
-
-//Pin del buzzer 
-  pinMode (buzzer, OUTPUT);
-
-
-//Pantalla
+  //Pantalla
   SysCtlClockSet(SYSCTL_SYSDIV_2_5 | SYSCTL_USE_PLL | SYSCTL_OSC_MAIN | SYSCTL_XTAL_16MHZ);
   Serial.begin(115200);
   GPIOPadConfigSet(GPIO_PORTB_BASE, 0 | 1 | 2 | 3 | 4 | 5 | 6 | 7, GPIO_STRENGTH_8MA, GPIO_PIN_TYPE_STD_WPU);
@@ -134,11 +128,13 @@ void setup() {
   LCD_Init();
   LCD_Clear(0xc7f4ff);
   LCD_Print("Proyecto 2", 80, 10, 2, 0x0000, 0xc7f4ff);
-  LCD_Print("Pulsimetro", 50, 25, 2, 0x0000, 0xc7f4ff);
+  LCD_Print("Pulsímetro", 50, 25, 2, 0x0000, 0xc7f4ff);
   LCD_Sprite(60, 90, 32, 32, prueba, 6, 0, 0, 1);
-}
 
-//LOOP PRINCIPAL 
+}
+//*********************************************
+// Loop Infinito
+//*********************************************
 void loop() {
   Serial.print("BPM:  ");
   Serial.print(BPM);
@@ -172,9 +168,9 @@ void loop() {
 
     String text8 = "PRESIONE EL BOTON PARA MOSTRAR DATOS ";
     LCD_Print(text8, 35,200,1,0x0000FF,0x20BC);
-    tone(buzzer, 1000);
+    tone(Buzzer, 1000);
     delay(500);
-    noTone(buzzer);
+    noTone(Buzzer);
   }
 
   if(save == 1){
@@ -192,114 +188,129 @@ void loop() {
       LCD_Print (text4, 95,37,1,0x0000FF,0xBF97);
       //LCD_Bitmap(70,65,150,heart);
 
-      buzzerSave();
+      BuzzerSave();
 
       
     }
   }
-//GUARDAR LOS DATOS EN LA MEMORIA SD
+ 
+  /*for (int x = 0; x < 320 - 32; x++) {
+    int anim2 = (x / 35) % 4;
+    LCD_Sprite(60, 100, 32, 32, pesaSprite, 4, anim2, 0, 1);
+    delay(15);
+  }*/
+}
 
-void MemoriaSD(void){
-  myFile =SD.open("BPM.txt",FILE_WRITE);
+//******************************
+//Guardar daros en la memoria SD
+//******************************
+void MemoriaSD(void)
+{
+  //Archivo para guardar los datos
+  archivo = SD.open("BPM.txt", FILE_WRITE);
 
-  if (myFile)
-  {
-    myFile.print("09/11/21");
-    myFile.print(",");
-    myFile.println(BPM);
+  if(archivo)
+  {    
+    archivo.print("07/11/21");
+    archivo.print(",");
+    archivo.println(BPM);
 
-    myFile.close();
-
-    Serial.print("SE HAN GUARDADO LOS DATOS");
-    Serial.print(BPM)
+    archivo.close();
+    
+    Serial.print("Se ha guardado exitosamente el peso: ");
+    Serial.println(BPM);
   }
-  else 
+
+  else
   {
-    Serial.println("No se pudo abrir el archivo"):
+    Serial.println("No se pudo abrir el archivo");
   }
 }
 
-//TONOS 
+//******************************
+//Tonos 
+//******************************
+//Tono 1
 void TonoSD(void)
 {
-  tone(buzzer, 466.164, 125); //La*
+  tone(Buzzer, 466.164, 125); //La*
   delay(125);
-  tone(buzzer, 523.251, 250); //Do
+  tone(Buzzer, 523.251, 250); //Do
   delay(250);
-  tone(buzzer, 466.164, 125); //La*
+  tone(Buzzer, 466.164, 125); //La*
   delay(125);
-  tone(buzzer, 440.00, 250); //La
+  tone(Buzzer, 440.00, 250); //La
   delay(250);
-  tone(buzzer, 391.995, 250); //Sol
+  tone(Buzzer, 391.995, 250); //Sol
   delay(250);
 
-  tone(buzzer, 523.251, 250); //Do
+  tone(Buzzer, 523.251, 250); //Do
   delay(250);
-  tone(buzzer, 466.164, 125); //La*
+  tone(Buzzer, 466.164, 125); //La*
   delay(125);
-  tone(buzzer, 440.00, 250); //La
+  tone(Buzzer, 440.00, 250); //La
   delay(250);
-  tone(buzzer, 391.995, 250); //Sol
+  tone(Buzzer, 391.995, 250); //Sol
   delay(250);
 
-  tone(buzzer, 391.995, 250); //Sol
+  tone(Buzzer, 391.995, 250); //Sol
   delay(250);
-  tone(buzzer, 349.228, 250); //Fa
+  tone(Buzzer, 349.228, 250); //Fa
   delay(250);
-  tone(buzzer, 311.127, 250); //Re*
+  tone(Buzzer, 311.127, 250); //Re*
   delay(125);
-  tone(buzzer, 311.127, 125); //Re*
+  tone(Buzzer, 311.127, 125); //Re*
   delay(125);
-  tone(buzzer, 349.228, 250); //Fa
+  tone(Buzzer, 349.228, 250); //Fa
   delay(250);
-  tone(buzzer, 293.665, 250); //Re
+  tone(Buzzer, 293.665, 250); //Re
   delay(250);
 
-  tone(buzzer, 293.665, 250); //Re
+  tone(Buzzer, 293.665, 250); //Re
   delay(250);
-  tone(buzzer, 293.665, 250); //Re
+  tone(Buzzer, 293.665, 250); //Re
   delay(250);
-  tone(buzzer, 293.665, 250); //Re
+  tone(Buzzer, 293.665, 250); //Re
   delay(250);
-  tone(buzzer, 293.665, 250); //Re
+  tone(Buzzer, 293.665, 250); //Re
   delay(250);
 
-  noTone(buzzer);
+  noTone(Buzzer);
 }
 
 void TonoDato(void)
 {
-  tone(buzzer, 1046.50, 200); //Do
+  tone(Buzzer, 1046.50, 200); //Do
   delay(200);
-  tone(buzzer, 1046.50, 200); //Do
+  tone(Buzzer, 1046.50, 200); //Do
   delay(200);
-  tone(buzzer, 1567.98, 200); //Sol
+  tone(Buzzer, 1567.98, 200); //Sol
   delay(200);
-  tone(buzzer, 1567.98, 200); //Sol
+  tone(Buzzer, 1567.98, 200); //Sol
   delay(200);
-  tone(buzzer, 1760.00, 200); //La
+  tone(Buzzer, 1760.00, 200); //La
   delay(200);
-  tone(buzzer, 1760.00, 200); //La
+  tone(Buzzer, 1760.00, 200); //La
   delay(200);
-  tone(buzzer, 1567.98, 400); //Sol
+  tone(Buzzer, 1567.98, 400); //Sol
   delay(400);
 
-  tone(buzzer,  1396.91, 200); //Fa
+  tone(Buzzer,  1396.91, 200); //Fa
   delay(200);
-  tone(buzzer,  1396.91, 200); //Fa
+  tone(Buzzer,  1396.91, 200); //Fa
   delay(200);
-  tone(buzzer, 1318.51, 200); //Mi
+  tone(Buzzer, 1318.51, 200); //Mi
   delay(200);
-  tone(buzzer, 1318.51, 200); //Mi
+  tone(Buzzer, 1318.51, 200); //Mi
   delay(200);
-  tone(buzzer,  1174.66, 200); //Re
+  tone(Buzzer,  1174.66, 200); //Re
   delay(200);
-  tone(buzzer,  1174.66, 200); //Re
+  tone(Buzzer,  1174.66, 200); //Re
   delay(200);
-  tone(buzzer, 1046.50, 400); //Do
+  tone(Buzzer, 1046.50, 400); //Do
   delay(400);
 
-  noTone(buzzer);
+  noTone(Buzzer);
 }
 
 //*********************************************
