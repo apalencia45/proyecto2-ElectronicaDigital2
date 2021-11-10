@@ -93,6 +93,14 @@ void setup() {
   Serial.begin(115200); 
   Serial2.begin(115200);
 
+
+//Boton para iniciar el sensor 
+ pinMode(boton1, INPUT_PULLUP);
+ //Boton para guardar el dato 
+ pinMode(boton2, INPUT_PULLUP);
+
+ TFTconf();
+ 
 //SD
   SPI.setModule(0);
   
@@ -103,7 +111,7 @@ void setup() {
   // or the SD library functions will not work.
   pinMode(, OUTPUT);
 
-  if (!SD.begin(32)) {
+  if (!SD.begin(PA_3)) {
     Serial.println("initialization failed!");
     return;
   }
@@ -113,131 +121,532 @@ void setup() {
 
   printDirectory(root, 0);
 
-  //Botones
-  pinMode(boton1, INPUT_PULLUP);
-  pinMode(boton2, INPUT_PULLUP);
+//Pin del Buzzer 
   pinMode (buzzer, OUTPUT);
+
+
+//Pantalla
+  SysCtlClockSet(SYSCTL_SYSDIV_2_5 | SYSCTL_USE_PLL | SYSCTL_OSC_MAIN | SYSCTL_XTAL_16MHZ);
+  Serial.begin(115200);
+  GPIOPadConfigSet(GPIO_PORTB_BASE, 0 | 1 | 2 | 3 | 4 | 5 | 6 | 7, GPIO_STRENGTH_8MA, GPIO_PIN_TYPE_STD_WPU);
   
+  Serial.println("Inicio de la pantalla");
+  LCD_Init();
+  LCD_Clear(0xc7f4ff);
+  LCD_Print("Proyecto 2", 80, 10, 2, 0x0000, 0xc7f4ff);
+  LCD_Print("Sensor de peso", 50, 25, 2, 0x0000, 0xc7f4ff);
+  LCD_Sprite(60, 90, 32, 32, prueba, 6, 0, 0, 1);
 }
 
+//LOOP PRINCIPAL 
 void loop() {
-
-int EstadoB1 = digitalRead(Boton1);
-  if((boton1 == LOW)&&(ultimoestado1==HIGH))
-  {
-    X = 1-X;
-    TonoDato();
-    Serial2.write(X);
-  }
-  ultimoestado1=boton1;
-
-  //if(Serial2.available()>0)
- // {
-    Sensor = Serial2.readStringUntil('\n');
-    Serial.print("El valor del sensor es de: ");
-    Peso = Sensor.toFloat();
-    Serial.println(Peso);
-  //}
+  Serial.print("BPM:  ");
+  Serial.print(BPM);
   
 //Guardar el valor del sensor 
+  int EstadoB1 = digitalRead(boton1);
   int EstadoB2 = digitalRead(boton2);
-  if((boton2 == LOW)&&(EstadoB2==HIGH))
-  {
-    TonoSD(); //Se reproduce el tono en el buzzer
-    MemoriaSD(); //Se guardan los datos en la memoria
-    abrir(2);
-    Y = 1-Y; 
-  }
-  EstadoB2=boton2;
-  
-   }
-    
+  Serial2.write (medir);
+  if((boton2 == LOW){
+
+    medir++;
+    if (medir > 1){
+      medir = 0;
     }
-void printDirectory(File dir, int numTabs) {
-   while(true) {
-     
-     File entry =  dir.openNextFile();
-     if (! entry) {
-       // no more files
-       break;
-     }
-     for (uint8_t i=0; i<numTabs; i++) {
-       Serial.print('\t');
-     }
-     Serial.print(entry.name());
-     if (entry.isDirectory()) {
-       Serial.println("/");
-       printDirectory(entry, numTabs+1);
-     } else {
-       // files have sizes, directories do not
-       Serial.print("\t\t");
-        Serial.println(entry.size(), DEC);
-        var++;
-        if(var > 4){
-          if (var < 8){
-            // se estan imprimiendo los nombres de los archivos
-            // enumerarlos
-            numero++;
-            Serial.println("");
-            Serial.print("imagen ");
-            Serial.print(numero);
-            Serial.println(":");
-          }
-        }
-     }
-     entry.close();
-   }
+  }
+  
+  if (EstadoB2 == LOW){
+    save++
+    if (save > 1){
+      guardar = 0;
+    }
+  }
+
+  if (medir == 1){
+    FillRect(0,0,319,239,0xFCD3);
+    String text5 = "MIEDIENDO";
+
+    LCD_Print(text5, 70,70,2,0x0000FF,0xFCD3);
+    String text6 = "...";
+    LCD_Print (text6, 100,100,2,0x0000FF,0xFCD3);
+
+    String text8 = "PRESIONE EL BOTON PARA MOSTRAR DATOS ";
+    LCD_Print(text8, 35,200,1,0x0000FF,0x20BC);
+    tone(buzzer, 1000);
+    delay(500)
+    noTone(buzzer);
+  }
+
+  if(save == 1){
+    if (medir ==1){
+      medir = 0;
+
+      if (Serial.available()> 0){
+        BPM = Serial2.read();
+      }
+      FillRect(0,0,319,239,0x0000FF);
+
+      String text7 = String(BPM);
+      LCD_Print(text7, 65,35,2,0x0000FF,0xBF97);
+      String text4 = String("LATIDOS POR MINUTOS");
+      LCD_Print (text4, 95,37,1,0x0000FF,0xBF97);
+      LCD_Bitmap(70,65,150,heart);
+
+      buzzerSave();
+
+      
+    }
+  }
+//GUARDAR LOS DATOS EN LA MEMORIA SD
+
+void MemoriaSD(void){
+  myFile =SD.open("BPM.txt",FILE_WRITE);
+
+  if (myFile)
+  {
+    myFile.print("09/11/21");
+    myFile.print(",");
+    myFile.println(BPM);
+
+    myFile.close();
+
+    Serial.print("SE HAN GUARDADO LOS DATOS");
+    Serial.print(BPM)
+  }
+  else 
+  {
+    Serial.println("No se pudo abrir el archivo"):
+  }
 }
 
-void abrir(int num){
-    if (num == 1){
-        myFile = SD.open("archivo.txt");
-        if (myFile) {
-          Serial.print("archivo.txt:");
-      
-           var = 0;  // reiniciar el indice del array
-            while (highscore3[var - 1] != 10) { // leer los caracteres hasta el enter
-              highscore3[var] = modo2.read();
-              if ((highscore3[var] < 48) && (highscore3[var] != 10)) {
-                highscore3[var] = 48;
-              }
-              var++;
-            }
-            high3 = (((int)highscore3[0] - 48) * 100) + (((int)highscore3[1] - 48) * 10) + ((int)highscore3[2] - 48);
- 
-          myFile.close();
-        } else {
-          // if the file didn't open, print an error:
-          Serial.println("error opening test.txt");
-        }
-    } else  if (num == 2){
-      
-    SD.remove("archivo.txt");
-        modo2 = SD.open("archivo.txt", FILE_WRITE);
-    // if the file opened okay, write to it:
-   
-      itoa(high2, snum, 10);  //  determiar cuantos digitos tiene el high2
-      if (high2 > 99) {  
-        modo2.print(snum[0]);
-        modo2.print(snum[1]);
-        modo2.print(snum[2]);
-      } else if (high2 > 9) {
-        modo2.print("0");
-        modo2.print(snum[0]);
-        modo2.print(snum[1]);
-      } else {
-        modo2.print("0");
-        modo2.print("0");
-        modo2.print(snum[0]);
-      }
-      modo2.print("\n");      // escribir el enter
+//TONOS 
+void TonoSD(void)
+{
+  tone(Buzzer, 466.164, 125); //La*
+  delay(125);
+  tone(Buzzer, 523.251, 250); //Do
+  delay(250);
+  tone(Buzzer, 466.164, 125); //La*
+  delay(125);
+  tone(Buzzer, 440.00, 250); //La
+  delay(250);
+  tone(Buzzer, 391.995, 250); //Sol
+  delay(250);
 
+  tone(Buzzer, 523.251, 250); //Do
+  delay(250);
+  tone(Buzzer, 466.164, 125); //La*
+  delay(125);
+  tone(Buzzer, 440.00, 250); //La
+  delay(250);
+  tone(Buzzer, 391.995, 250); //Sol
+  delay(250);
 
-      // close the file:
-      modo2.close();
-      Serial.println("done.");
-    } else {
-      // si es un numero distinto, imprimir que no se encontro la imagen
-      Serial.println("Imagen no encontrada");
+  tone(Buzzer, 391.995, 250); //Sol
+  delay(250);
+  tone(Buzzer, 349.228, 250); //Fa
+  delay(250);
+  tone(Buzzer, 311.127, 250); //Re*
+  delay(125);
+  tone(Buzzer, 311.127, 125); //Re*
+  delay(125);
+  tone(Buzzer, 349.228, 250); //Fa
+  delay(250);
+  tone(Buzzer, 293.665, 250); //Re
+  delay(250);
+
+  tone(Buzzer, 293.665, 250); //Re
+  delay(250);
+  tone(Buzzer, 293.665, 250); //Re
+  delay(250);
+  tone(Buzzer, 293.665, 250); //Re
+  delay(250);
+  tone(Buzzer, 293.665, 250); //Re
+  delay(250);
+
+  noTone(Buzzer);
+}
+
+void TonoDato(void)
+{
+  tone(Buzzer, 1046.50, 200); //Do
+  delay(200);
+  tone(Buzzer, 1046.50, 200); //Do
+  delay(200);
+  tone(Buzzer, 1567.98, 200); //Sol
+  delay(200);
+  tone(Buzzer, 1567.98, 200); //Sol
+  delay(200);
+  tone(Buzzer, 1760.00, 200); //La
+  delay(200);
+  tone(Buzzer, 1760.00, 200); //La
+  delay(200);
+  tone(Buzzer, 1567.98, 400); //Sol
+  delay(400);
+
+  tone(Buzzer,  1396.91, 200); //Fa
+  delay(200);
+  tone(Buzzer,  1396.91, 200); //Fa
+  delay(200);
+  tone(Buzzer, 1318.51, 200); //Mi
+  delay(200);
+  tone(Buzzer, 1318.51, 200); //Mi
+  delay(200);
+  tone(Buzzer,  1174.66, 200); //Re
+  delay(200);
+  tone(Buzzer,  1174.66, 200); //Re
+  delay(200);
+  tone(Buzzer, 1046.50, 400); //Do
+  delay(400);
+
+  noTone(Buzzer);
+}
+
+//FUNCIONES PARA LA LCD
+void LCD_Init(void) {
+  pinMode(LCD_RST, OUTPUT);
+  pinMode(LCD_CS, OUTPUT);
+  pinMode(LCD_RS, OUTPUT);
+  pinMode(LCD_WR, OUTPUT);
+  pinMode(LCD_RD, OUTPUT);
+  for (uint8_t i = 0; i < 8; i++) {
+    pinMode(DPINS[i], OUTPUT);
+  }
+  //**************
+  // Secuencia de Inicialización
+  //**************
+  digitalWrite(LCD_CS, HIGH);
+  digitalWrite(LCD_RS, HIGH);
+  digitalWrite(LCD_WR, HIGH);
+  digitalWrite(LCD_RD, HIGH);
+  digitalWrite(LCD_RST, HIGH);
+  delay(5);
+  digitalWrite(LCD_RST, LOW);
+  delay(20);
+  digitalWrite(LCD_RST, HIGH);
+  delay(150);
+  digitalWrite(LCD_CS, LOW);
+  //**************
+  LCD_CMD(0xE9);  // SETPANELRELATED
+  LCD_DATA(0x20);
+  //**************
+  LCD_CMD(0x11); // Exit Sleep SLEEP OUT (SLPOUT)
+  delay(100);
+  //**************
+  LCD_CMD(0xD1);    // (SETVCOM)
+  LCD_DATA(0x00);
+  LCD_DATA(0x71);
+  LCD_DATA(0x19);
+  //**************
+  LCD_CMD(0xD0);   // (SETPOWER)
+  LCD_DATA(0x07);
+  LCD_DATA(0x01);
+  LCD_DATA(0x08);
+  //**************
+  LCD_CMD(0x36);  // (MEMORYACCESS)
+  LCD_DATA(0x40 | 0x80 | 0x20 | 0x08); // LCD_DATA(0x19);
+  //**************
+  LCD_CMD(0x3A); // Set_pixel_format (PIXELFORMAT)
+  LCD_DATA(0x05); // color setings, 05h - 16bit pixel, 11h - 3bit pixel
+  //**************
+  LCD_CMD(0xC1);    // (POWERCONTROL2)
+  LCD_DATA(0x10);
+  LCD_DATA(0x10);
+  LCD_DATA(0x02);
+  LCD_DATA(0x02);
+  //**************
+  LCD_CMD(0xC0); // Set Default Gamma (POWERCONTROL1)
+  LCD_DATA(0x00);
+  LCD_DATA(0x35);
+  LCD_DATA(0x00);
+  LCD_DATA(0x00);
+  LCD_DATA(0x01);
+  LCD_DATA(0x02);
+  //**************
+  LCD_CMD(0xC5); // Set Frame Rate (VCOMCONTROL1)
+  LCD_DATA(0x04); // 72Hz
+  //**************
+  LCD_CMD(0xD2); // Power Settings  (SETPWRNORMAL)
+  LCD_DATA(0x01);
+  LCD_DATA(0x44);
+  //**************
+  LCD_CMD(0xC8); //Set Gamma  (GAMMASET)
+  LCD_DATA(0x04);
+  LCD_DATA(0x67);
+  LCD_DATA(0x35);
+  LCD_DATA(0x04);
+  LCD_DATA(0x08);
+  LCD_DATA(0x06);
+  LCD_DATA(0x24);
+  LCD_DATA(0x01);
+  LCD_DATA(0x37);
+  LCD_DATA(0x40);
+  LCD_DATA(0x03);
+  LCD_DATA(0x10);
+  LCD_DATA(0x08);
+  LCD_DATA(0x80);
+  LCD_DATA(0x00);
+  //**************
+  LCD_CMD(0x2A); // Set_column_address 320px (CASET)
+  LCD_DATA(0x00);
+  LCD_DATA(0x00);
+  LCD_DATA(0x01);
+  LCD_DATA(0x3F);
+  //**************
+  LCD_CMD(0x2B); // Set_page_address 480px (PASET)
+  LCD_DATA(0x00);
+  LCD_DATA(0x00);
+  LCD_DATA(0x01);
+  LCD_DATA(0xE0);
+  //  LCD_DATA(0x8F);
+  LCD_CMD(0x29); //display on
+  LCD_CMD(0x2C); //display on
+
+  LCD_CMD(ILI9341_INVOFF); //Invert Off
+  delay(120);
+  LCD_CMD(ILI9341_SLPOUT);    //Exit Sleep
+  delay(120);
+  LCD_CMD(ILI9341_DISPON);    //Display on
+  digitalWrite(LCD_CS, HIGH);
+}
+//*********************************************
+// Función para enviar comandos a la LCD - parámetro (comando)
+//*********************************************
+void LCD_CMD(uint8_t cmd) {
+  digitalWrite(LCD_RS, LOW);
+  digitalWrite(LCD_WR, LOW);
+  GPIO_PORTB_DATA_R = cmd;
+  digitalWrite(LCD_WR, HIGH);
+}
+//*********************************************
+// Función para enviar datos a la LCD - parámetro (dato)
+//*********************************************
+void LCD_DATA(uint8_t data) {
+  digitalWrite(LCD_RS, HIGH);
+  digitalWrite(LCD_WR, LOW);
+  GPIO_PORTB_DATA_R = data;
+  digitalWrite(LCD_WR, HIGH);
+}
+//*********************************************
+// Función para definir rango de direcciones de memoria con las cuales se trabajara (se define una ventana)
+//*********************************************
+void SetWindows(unsigned int x1, unsigned int y1, unsigned int x2, unsigned int y2) {
+  LCD_CMD(0x2a); // Set_column_address 4 parameters
+  LCD_DATA(x1 >> 8);
+  LCD_DATA(x1);
+  LCD_DATA(x2 >> 8);
+  LCD_DATA(x2);
+  LCD_CMD(0x2b); // Set_page_address 4 parameters
+  LCD_DATA(y1 >> 8);
+  LCD_DATA(y1);
+  LCD_DATA(y2 >> 8);
+  LCD_DATA(y2);
+  LCD_CMD(0x2c); // Write_memory_start
+}
+//*********************************************
+// Función para borrar la pantalla - parámetros (color)
+//*********************************************
+void LCD_Clear(unsigned int c) {
+  unsigned int x, y;
+  LCD_CMD(0x02c); // write_memory_start
+  digitalWrite(LCD_RS, HIGH);
+  digitalWrite(LCD_CS, LOW);
+  SetWindows(0, 0, 319, 239); // 479, 319);
+  for (x = 0; x < 320; x++)
+    for (y = 0; y < 240; y++) {
+      LCD_DATA(c >> 8);
+      LCD_DATA(c);
     }
+  digitalWrite(LCD_CS, HIGH);
+}
+//*********************************************
+// Función para dibujar una línea horizontal - parámetros ( coordenada x, cordenada y, longitud, color)
+//*********************************************
+void H_line(unsigned int x, unsigned int y, unsigned int l, unsigned int c) {
+  unsigned int i, j;
+  LCD_CMD(0x02c); //write_memory_start
+  digitalWrite(LCD_RS, HIGH);
+  digitalWrite(LCD_CS, LOW);
+  l = l + x;
+  SetWindows(x, y, l, y);
+  j = l;// * 2;
+  for (i = 0; i < l; i++) {
+    LCD_DATA(c >> 8);
+    LCD_DATA(c);
+  }
+  digitalWrite(LCD_CS, HIGH);
+}
+//*********************************************
+// Función para dibujar una línea vertical - parámetros ( coordenada x, cordenada y, longitud, color)
+//*********************************************
+void V_line(unsigned int x, unsigned int y, unsigned int l, unsigned int c) {
+  unsigned int i, j;
+  LCD_CMD(0x02c); //write_memory_start
+  digitalWrite(LCD_RS, HIGH);
+  digitalWrite(LCD_CS, LOW);
+  l = l + y;
+  SetWindows(x, y, x, l);
+  j = l; //* 2;
+  for (i = 1; i <= j; i++) {
+    LCD_DATA(c >> 8);
+    LCD_DATA(c);
+  }
+  digitalWrite(LCD_CS, HIGH);
+}
+//*********************************************
+// Función para dibujar un rectángulo - parámetros ( coordenada x, cordenada y, ancho, alto, color)
+//*********************************************
+void Rect(unsigned int x, unsigned int y, unsigned int w, unsigned int h, unsigned int c) {
+  H_line(x  , y  , w, c);
+  H_line(x  , y + h, w, c);
+  V_line(x  , y  , h, c);
+  V_line(x + w, y  , h, c);
+}
+//*********************************************
+// Función para dibujar un rectángulo relleno - parámetros ( coordenada x, cordenada y, ancho, alto, color)
+//*********************************************
+/*void FillRect(unsigned int x, unsigned int y, unsigned int w, unsigned int h, unsigned int c) {
+  unsigned int i;
+  for (i = 0; i < h; i++) {
+    H_line(x  , y  , w, c);
+    H_line(x  , y+i, w, c);
+  }
+  }
+*/
+
+void FillRect(unsigned int x, unsigned int y, unsigned int w, unsigned int h, unsigned int c) {
+  LCD_CMD(0x02c); // write_memory_start
+  digitalWrite(LCD_RS, HIGH);
+  digitalWrite(LCD_CS, LOW);
+
+  unsigned int x2, y2;
+  x2 = x + w;
+  y2 = y + h;
+  SetWindows(x, y, x2 - 1, y2 - 1);
+  unsigned int k = w * h * 2 - 1;
+  unsigned int i, j;
+  for (int i = 0; i < w; i++) {
+    for (int j = 0; j < h; j++) {
+      LCD_DATA(c >> 8);
+      LCD_DATA(c);
+
+      //LCD_DATA(bitmap[k]);
+      k = k - 2;
+    }
+  }
+  digitalWrite(LCD_CS, HIGH);
+}
+//*********************************************
+// Función para dibujar texto - parámetros ( texto, coordenada x, cordenada y, color, background)
+//*********************************************
+void LCD_Print(String text, int x, int y, int fontSize, int color, int background) {
+  int fontXSize ;
+  int fontYSize ;
+
+  if (fontSize == 1) {
+    fontXSize = fontXSizeSmal ;
+    fontYSize = fontYSizeSmal ;
+  }
+  if (fontSize == 2) {
+    fontXSize = fontXSizeBig ;
+    fontYSize = fontYSizeBig ;
+  }
+
+  char charInput ;
+  int cLength = text.length();
+  Serial.println(cLength, DEC);
+  int charDec ;
+  int c ;
+  int charHex ;
+  char char_array[cLength + 1];
+  text.toCharArray(char_array, cLength + 1) ;
+  for (int i = 0; i < cLength ; i++) {
+    charInput = char_array[i];
+    Serial.println(char_array[i]);
+    charDec = int(charInput);
+    digitalWrite(LCD_CS, LOW);
+    SetWindows(x + (i * fontXSize), y, x + (i * fontXSize) + fontXSize - 1, y + fontYSize );
+    long charHex1 ;
+    for ( int n = 0 ; n < fontYSize ; n++ ) {
+      if (fontSize == 1) {
+        charHex1 = pgm_read_word_near(smallFont + ((charDec - 32) * fontYSize) + n);
+      }
+      if (fontSize == 2) {
+        charHex1 = pgm_read_word_near(bigFont + ((charDec - 32) * fontYSize) + n);
+      }
+      for (int t = 1; t < fontXSize + 1 ; t++) {
+        if (( charHex1 & (1 << (fontXSize - t))) > 0 ) {
+          c = color ;
+        } else {
+          c = background ;
+        }
+        LCD_DATA(c >> 8);
+        LCD_DATA(c);
+      }
+    }
+    digitalWrite(LCD_CS, HIGH);
+  }
+}
+//*********************************************
+// Función para dibujar una imagen a partir de un arreglo de colores (Bitmap) Formato (Color 16bit R 5bits G 6bits B 5bits)
+//*********************************************
+void LCD_Bitmap(unsigned int x, unsigned int y, unsigned int width, unsigned int height, unsigned char bitmap[]) {
+  LCD_CMD(0x02c); // write_memory_start
+  digitalWrite(LCD_RS, HIGH);
+  digitalWrite(LCD_CS, LOW);
+
+  unsigned int x2, y2;
+  x2 = x + width;
+  y2 = y + height;
+  SetWindows(x, y, x2 - 1, y2 - 1);
+  unsigned int k = 0;
+  unsigned int i, j;
+
+  for (int i = 0; i < width; i++) {
+    for (int j = 0; j < height; j++) {
+      LCD_DATA(bitmap[k]);
+      LCD_DATA(bitmap[k + 1]);
+      //LCD_DATA(bitmap[k]);
+      k = k + 2;
+    }
+  }
+  digitalWrite(LCD_CS, HIGH);
+}
+//*********************************************
+// Función para dibujar una imagen sprite - los parámetros columns = número de imagenes en el sprite, index = cual desplegar, flip = darle vuelta
+//*********************************************
+void LCD_Sprite(int x, int y, int width, int height, unsigned char bitmap[], int columns, int index, char flip, char offset) {
+  LCD_CMD(0x02c); // write_memory_start
+  digitalWrite(LCD_RS, HIGH);
+  digitalWrite(LCD_CS, LOW);
+
+  unsigned int x2, y2;
+  x2 =   x + width;
+  y2 =    y + height;
+  SetWindows(x, y, x2 - 1, y2 - 1);
+  int k = 0;
+  int ancho = ((width * columns));
+  if (flip) {
+    for (int j = 0; j < height; j++) {
+      k = (j * (ancho) + index * width - 1 - offset) * 2;
+      k = k + width * 2;
+      for (int i = 0; i < width; i++) {
+        LCD_DATA(bitmap[k]);
+        LCD_DATA(bitmap[k + 1]);
+        k = k - 2;
+      }
+    }
+  } else {
+    for (int j = 0; j < height; j++) {
+      k = (j * (ancho) + index * width + 1 + offset) * 2;
+      for (int i = 0; i < width; i++) {
+        LCD_DATA(bitmap[k]);
+        LCD_DATA(bitmap[k + 1]);
+        k = k + 2;
+      }
+    }
+
+
+  }
+  digitalWrite(LCD_CS, HIGH);
 }
