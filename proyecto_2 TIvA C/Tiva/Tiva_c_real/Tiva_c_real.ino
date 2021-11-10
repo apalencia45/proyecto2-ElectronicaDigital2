@@ -35,8 +35,8 @@ File myFile;
 //Definición de pines 
 #define tx PD_7
 #define rx PD_6
-#define boton1 PF_4
-#define boton2 PF_0
+#define boton1 PF_0 //Boton derecho 
+#define boton2 PF_4 //Boton izquierdo
 #define buzzer PA_7
 
 #define note_cc 261
@@ -78,7 +78,7 @@ void MemoriaSD(void);
 void TonoSD(void);
 void TonoDato(void);
 
-//Funcion Buzzer
+//Funcion buzzer
 void buzzerSave(void);
 
 //extern uint8_t fondo[];
@@ -99,7 +99,9 @@ void setup() {
  //Boton para guardar el dato 
  pinMode(boton2, INPUT_PULLUP);
 
- TFTconf();
+ 
+
+
  
 //SD
   SPI.setModule(0);
@@ -119,7 +121,7 @@ void setup() {
 
  
 
-//Pin del Buzzer 
+//Pin del buzzer 
   pinMode (buzzer, OUTPUT);
 
 
@@ -132,7 +134,7 @@ void setup() {
   LCD_Init();
   LCD_Clear(0xc7f4ff);
   LCD_Print("Proyecto 2", 80, 10, 2, 0x0000, 0xc7f4ff);
-  LCD_Print("Sensor de peso", 50, 25, 2, 0x0000, 0xc7f4ff);
+  LCD_Print("Pulsimetro", 50, 25, 2, 0x0000, 0xc7f4ff);
   LCD_Sprite(60, 90, 32, 32, prueba, 6, 0, 0, 1);
 }
 
@@ -220,84 +222,84 @@ void MemoriaSD(void){
 //TONOS 
 void TonoSD(void)
 {
-  tone(Buzzer, 466.164, 125); //La*
+  tone(buzzer, 466.164, 125); //La*
   delay(125);
-  tone(Buzzer, 523.251, 250); //Do
+  tone(buzzer, 523.251, 250); //Do
   delay(250);
-  tone(Buzzer, 466.164, 125); //La*
+  tone(buzzer, 466.164, 125); //La*
   delay(125);
-  tone(Buzzer, 440.00, 250); //La
+  tone(buzzer, 440.00, 250); //La
   delay(250);
-  tone(Buzzer, 391.995, 250); //Sol
+  tone(buzzer, 391.995, 250); //Sol
   delay(250);
 
-  tone(Buzzer, 523.251, 250); //Do
+  tone(buzzer, 523.251, 250); //Do
   delay(250);
-  tone(Buzzer, 466.164, 125); //La*
+  tone(buzzer, 466.164, 125); //La*
   delay(125);
-  tone(Buzzer, 440.00, 250); //La
+  tone(buzzer, 440.00, 250); //La
   delay(250);
-  tone(Buzzer, 391.995, 250); //Sol
+  tone(buzzer, 391.995, 250); //Sol
   delay(250);
 
-  tone(Buzzer, 391.995, 250); //Sol
+  tone(buzzer, 391.995, 250); //Sol
   delay(250);
-  tone(Buzzer, 349.228, 250); //Fa
+  tone(buzzer, 349.228, 250); //Fa
   delay(250);
-  tone(Buzzer, 311.127, 250); //Re*
+  tone(buzzer, 311.127, 250); //Re*
   delay(125);
-  tone(Buzzer, 311.127, 125); //Re*
+  tone(buzzer, 311.127, 125); //Re*
   delay(125);
-  tone(Buzzer, 349.228, 250); //Fa
+  tone(buzzer, 349.228, 250); //Fa
   delay(250);
-  tone(Buzzer, 293.665, 250); //Re
+  tone(buzzer, 293.665, 250); //Re
   delay(250);
 
-  tone(Buzzer, 293.665, 250); //Re
+  tone(buzzer, 293.665, 250); //Re
   delay(250);
-  tone(Buzzer, 293.665, 250); //Re
+  tone(buzzer, 293.665, 250); //Re
   delay(250);
-  tone(Buzzer, 293.665, 250); //Re
+  tone(buzzer, 293.665, 250); //Re
   delay(250);
-  tone(Buzzer, 293.665, 250); //Re
+  tone(buzzer, 293.665, 250); //Re
   delay(250);
 
-  noTone(Buzzer);
+  noTone(buzzer);
 }
 
 void TonoDato(void)
 {
-  tone(Buzzer, 1046.50, 200); //Do
+  tone(buzzer, 1046.50, 200); //Do
   delay(200);
-  tone(Buzzer, 1046.50, 200); //Do
+  tone(buzzer, 1046.50, 200); //Do
   delay(200);
-  tone(Buzzer, 1567.98, 200); //Sol
+  tone(buzzer, 1567.98, 200); //Sol
   delay(200);
-  tone(Buzzer, 1567.98, 200); //Sol
+  tone(buzzer, 1567.98, 200); //Sol
   delay(200);
-  tone(Buzzer, 1760.00, 200); //La
+  tone(buzzer, 1760.00, 200); //La
   delay(200);
-  tone(Buzzer, 1760.00, 200); //La
+  tone(buzzer, 1760.00, 200); //La
   delay(200);
-  tone(Buzzer, 1567.98, 400); //Sol
+  tone(buzzer, 1567.98, 400); //Sol
   delay(400);
 
-  tone(Buzzer,  1396.91, 200); //Fa
+  tone(buzzer,  1396.91, 200); //Fa
   delay(200);
-  tone(Buzzer,  1396.91, 200); //Fa
+  tone(buzzer,  1396.91, 200); //Fa
   delay(200);
-  tone(Buzzer, 1318.51, 200); //Mi
+  tone(buzzer, 1318.51, 200); //Mi
   delay(200);
-  tone(Buzzer, 1318.51, 200); //Mi
+  tone(buzzer, 1318.51, 200); //Mi
   delay(200);
-  tone(Buzzer,  1174.66, 200); //Re
+  tone(buzzer,  1174.66, 200); //Re
   delay(200);
-  tone(Buzzer,  1174.66, 200); //Re
+  tone(buzzer,  1174.66, 200); //Re
   delay(200);
-  tone(Buzzer, 1046.50, 400); //Do
+  tone(buzzer, 1046.50, 400); //Do
   delay(400);
 
-  noTone(Buzzer);
+  noTone(buzzer);
 }
 
 //*********************************************
